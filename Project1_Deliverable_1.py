@@ -158,8 +158,4 @@ def check_google_scholar(url: str) -> int:
         return 0  # Assume no citations found
 
 # === Example Usage ===
-user_prompt = "I want to learn math for machine learning, can you recommend a site where i can learn?"
-url_to_check = "https://www.geeksforgeeks.org/machine-learning-mathematics/"
 
-result = rate_url_validity(user_prompt, url_to_check)
-print(result["Explanation"])

@@ -2,4 +2,8 @@ requests
 beautifulsoup4
 sentence-transformers
 transformers
--e .
+newspaper3k
+aiohttp
+nest_asyncio
+torch
+concurrent.futures
