@@ -1,25 +1,24 @@
-import requests
-from bs4 import BeautifulSoup
+import os  
+from dotenv import load_dotenv
 from sentence_transformers import SentenceTransformer, util
 from transformers import pipeline
 import logging
 from newspaper import Article
-import functools
 import aiohttp
 import asyncio
 import nest_asyncio
-from concurrent.futures import ThreadPoolExecutor
+import requests
 
 # Apply nest_asyncio to support Jupyter notebooks
 nest_asyncio.apply()
 
+# Load environment variables from the .env file
+load_dotenv()  # Load environment variables from .env file
+
 # Configure logging
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
 
-#SERPAPI_API_KEY = "efc206f678b71a9a7ec21e5000e5e4b03cbe155fc5716b04f266bc3b0744b595"
-
 class URLValidator:
-
     """
     A URL validation class that evaluates the credibility of a webpage using multiple NLP models.
     It assesses:
@@ -27,28 +26,32 @@ class URLValidator:
     - Content relevance (how well the content matches the user's query)
     - Fact-checking (cross-checking claims with trusted sources)
     - Bias detection (analyzing sentiment to detect potential bias)
+    - Citation checking (using Google Scholar)
     """
-    
-    def __init__(self):
 
+    def __init__(self):
         """
         Initializes the NLP models used for URL validation.
         - Fake News Detection (BERT-based model)
         - Semantic Similarity Model (Sentence Transformers)
         - Sentiment Analysis Model (RoBERTa-based model)
         """
-
-        
         try:
-            #self.serpapi_key = SERPAPI_API_KEY
+            # Fetch the SerpAPI key from environment variables or use a default if missing
+            self.serpapi_key = os.getenv("SERPAPI_KEY", "efc206f678b71a9a7ec21e5000e5e4b03cbe155fc5716b04f266bc3b0744b595")
+
+            if not self.serpapi_key:
+                raise ValueError("SerpAPI key is missing from environment variables or not set in .env file!")
+
+            # Initialize the models
             self.similarity_model = SentenceTransformer('sentence-transformers/all-mpnet-base-v2')
             self.fake_news_classifier = pipeline("text-classification", model="mrm8488/bert-tiny-finetuned-fake-news-detection")
             self.sentiment_analyzer = pipeline("text-classification", model="cardiffnlp/twitter-roberta-base-sentiment")
+
         except Exception as e:
             logging.error(f"Error initializing models: {e}")
 
-    def fetch_page_content(self, url: str) -> str:
-
+    async def fetch_page_content(self, url: str) -> str:
         """
         Fetches and extracts text content from the given URL using `newspaper3k`.
         
@@ -68,7 +71,6 @@ class URLValidator:
             return ""
 
     def get_domain_trust(self, content: str) -> int:
-
         """
         Determines the trustworthiness of a webpage by classifying it as REAL or FAKE.
         Uses a fake news detection model (fine-tuned BERT-based classifier).
@@ -100,8 +102,6 @@ class URLValidator:
         Returns:
             int: Similarity score (0-100), where higher values indicate higher relevance.
         """
-
-        
         if not content:
             return 0
         try:
@@ -125,7 +125,6 @@ class URLValidator:
         Returns:
             int: Fact-check score (0-100), where higher values indicate verified claims.
         """
-        
         if not content:
             return 50
         urls = [
@@ -145,6 +144,25 @@ class URLValidator:
         except Exception as e:
             logging.error(f"Error in fact-checking API calls: {e}")
         return 50
+
+    def check_google_scholar(self, url: str) -> int:
+        """
+        Checks Google Scholar citations using SerpAPI.
+        
+        Args:
+            url (str): The webpage URL to check.
+        
+        Returns:
+            int: Citation score (0-100), higher values indicate more citations.
+        """
+        params = {"q": url, "engine": "google_scholar", "api_key": self.serpapi_key}
+        try:
+            response = requests.get("https://serpapi.com/search", params=params)
+            data = response.json()
+            return min(len(data.get("organic_results", [])) * 10, 100)
+        except Exception as e:
+            logging.error(f"Error checking Google Scholar citations: {e}")
+            return 0  # Default to no citations
 
     def detect_bias(self, content: str) -> int:
         """
@@ -183,7 +201,7 @@ class URLValidator:
             logging.error(f"Error generating star rating: {e}")
             return 1, "⭐"
 
-    def generate_explanation(self, domain_trust, similarity_score, fact_check_score, bias_score, final_score) -> str:
+    def generate_explanation(self, domain_trust, similarity_score, fact_check_score, bias_score, citation_score, final_score) -> str:
         """
         Generates a human-readable explanation for the credibility score.
         
@@ -192,6 +210,7 @@ class URLValidator:
             similarity_score (int): How relevant the content is to the user query.
             fact_check_score (int): Verification score from fact-checking sources.
             bias_score (int): Bias detection score.
+            citation_score (int): Citation score based on Google Scholar.
             final_score (float): Overall credibility score.
         
         Returns:
@@ -207,6 +226,8 @@ class URLValidator:
                 reasons.append("Limited fact-checking verification found.")
             if bias_score < 50:
                 reasons.append("Potential bias detected in the content.")
+            if citation_score < 30:
+                reasons.append("Few citations found for this content.")
             return " ".join(reasons) if reasons else "This source is highly credible and relevant."
         except Exception as e:
             logging.error(f"Error generating explanation: {e}")
@@ -224,21 +245,23 @@ class URLValidator:
             dict: A dictionary containing credibility scores, star rating, and explanation.
         """
         try:
-            content = self.fetch_page_content(url)
+            content = await self.fetch_page_content(url)
             domain_trust = self.get_domain_trust(content)
             similarity_score = self.compute_similarity_score(user_query, content)
             fact_check_score = await self.check_fact_sources_async(content)
+            citation_score = self.check_google_scholar(url)
             bias_score = self.detect_bias(content)
 
             final_score = (
-                (0.35 * domain_trust) +
+                (0.3 * domain_trust) +
                 (0.3 * similarity_score) +
                 (0.2 * fact_check_score) +
-                (0.15 * bias_score)
+                (0.1 * bias_score) +
+                (0.1 * citation_score)
             )
             
             stars, icon = self.get_star_rating(final_score)
-            explanation = self.generate_explanation(domain_trust, similarity_score, fact_check_score, bias_score, final_score)
+            explanation = self.generate_explanation(domain_trust, similarity_score, fact_check_score, bias_score, citation_score, final_score)
 
             return {
                 "raw_score": {
@@ -246,6 +269,7 @@ class URLValidator:
                     "Content Relevance": similarity_score,
                     "Fact-Check Score": fact_check_score,
                     "Bias Score": bias_score,
+                    "Citation Score": citation_score,
                     "Final Validity Score": final_score
                 },
                 "stars": {
@@ -279,8 +303,3 @@ class URLValidator:
         except Exception as e:
             logging.error(f"Error in rate_url_validity execution: {e}")
             return {"error": "Failed to execute URL validation."}
-
-
-
-
-

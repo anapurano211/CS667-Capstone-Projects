@@ -1,9 +1,8 @@
-requests
-beautifulsoup4
+streamlit
+python-dotenv
 sentence-transformers
 transformers
 newspaper3k
 aiohttp
 nest_asyncio
-torch
-concurrent.futures
+requests
