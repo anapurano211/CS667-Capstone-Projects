@@ -36,10 +36,10 @@ The Streamlit application is hosted at the following link:
 Below are images showcasing the Streamlit app's interface and results:
 
 **Main UI Page:**
-![URL Validator UI](Screenshot 2025-03-01 212654.jpg)
+https://github.com/anapurano211/CS667-Capstone-Projects/Screenshot 2025-03-01 212654.jpg
 
 **Results Display:**
-![Validation Results](Screenshot 2025-03-01 212710.jpg)
+https://github.com/anapurano211/CS667-Capstone-Projects/Screenshot 2025-03-01 212710.jpg
 
 ---
 
