@@ -32,14 +32,6 @@ The URL Validator is deployed as a **web-based application using Streamlit**, ma
 The Streamlit application is hosted at the following link:  
 [**CS667 Capstone Project - URL Validator**](https://cs667-capstone-projects-ivct4umpbiodihfmf5qbo6.streamlit.app/)
 
-#### **User Interface Screenshots:**
-Below are images showcasing the Streamlit app's interface and results:
-
-**Main UI Page:**
-https://github.com/anapurano211/CS667-Capstone-Projects/Screenshot 2025-03-01 212654.jpg
-
-**Results Display:**
-https://github.com/anapurano211/CS667-Capstone-Projects/Screenshot 2025-03-01 212710.jpg
 
 ---
 
