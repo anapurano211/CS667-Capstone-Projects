@@ -32,7 +32,6 @@ The URL Validator is deployed as a **web-based application using Streamlit**, ma
 The Streamlit application is hosted at the following link:  
 [**CS667 Capstone Project - URL Validator**](https://cs667-capstone-projects-ivct4umpbiodihfmf5qbo6.streamlit.app/)
 
-
 ---
 
 ## **Data Flow & Processing Pipeline**
@@ -100,11 +99,13 @@ Additionally, **exception handling** is integrated into return statements to pre
 ## **Final Score Calculation**
 The final credibility score is calculated as follows:
 
-\[ \text{Final Score} = (0.3 \times \text{Domain Trust}) + (0.3 \times \text{Content Relevance}) + (0.2 \times \text{Fact-Check Score}) + (0.1 \times \text{Bias Score}) + (0.1 \times \text{Citation Score}) \]
+**Final Score** = (0.3 × Domain Trust) + (0.3 × Content Relevance)  
++ (0.2 × Fact-Check Score) + (0.1 × Bias Score) + (0.1 × Citation Score)
 
 This score is then converted into a **star rating**, with 5 stars indicating the highest credibility.
 
 ---
 
 **End of Report**
+
 
