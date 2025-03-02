@@ -6,4 +6,3 @@ newspaper3k
 aiohttp
 nest_asyncio
 requests
-Project1_Deliverable_2 
